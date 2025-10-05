@@ -18,11 +18,10 @@ import (
 
 // Vars từ auto.go
 var (
-	queue        = make(chan string, 100)
-	mutex        = &sync.Mutex{}
-	botList      = []string{"Security", "Wick"}
-	CountBot     int
-	CountBotCond = sync.NewCond(mutex)  // Nếu cần sync thêm
+	queue   = make(chan string, 100)
+	mutex   = &sync.Mutex{}
+	botList = []string{"Security", "Wick"}
+	CountBot int
 )
 
 // onGuildCreate từ auto.go (merge vào đây)
@@ -39,9 +38,21 @@ func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	// bypass.GetBotNicks(s, event.ID)  // Stub; thêm core/bypass nếu có
-	botNicknames := []string{}  // Placeholder nếu thiếu core
-	// for _, nickname := range botNicknames { ... }  // Logic detect bots
+	// bypass.GetBotNicks(s, event.ID)  // Gọi stub hoặc thật nếu có core/bypass
+	botNicknames, err := getBotNicksStub(s, event.ID)  // Stub: Thay bằng bypass.GetBotNicks nếu có
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Loop để dùng biến botNicknames (fix unused)
+	for _, nickname := range botNicknames {
+		for _, botID := range botList {
+			if nickname == botID {
+				fmt.Println("Found ", nickname)
+				CountBot++
+			}
+		}
+	}
 
 	if CountBot == 0 {
 		fmt.Println("There's no any antinuke bots")
@@ -119,6 +130,12 @@ func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	}
 
 	CountBot = 0
+}
+
+// Stub cho GetBotNicks (thay bằng bypass.GetBotNicks khi có core/bypass)
+func getBotNicksStub(s *discordgo.Session, guildID string) ([]string, error) {
+	// TODO: Implement thật với bypass.GetBotNicks(s, guildID)
+	return []string{}, nil  // Trả empty để test (CountBot=0)
 }
 
 // LeaveEveryServer từ overcharge.go (merge)
